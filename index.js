@@ -3,6 +3,8 @@ const app =express();
 const mysql = require("mysql");
 const bodyParser = require('body-parser');
 app.use(bodyParser.text({type: '*/*'}))
+const redis = require("redis")
+
 
 const connection = mysql.createConnection({
     host: 'localhost',
@@ -15,13 +17,17 @@ connection.connect((err)=>{
     if(err) throw err;
     console.log("Database Connected Successfully")
 });
+var data = []
+function get_initial_data(){
+    connection.query('select * from urlDb',function(err,result){
+        data = result
+    })
+    return data
+}
 
-app.get("/",(req,res)=>{
-    res.send("hello")
-})
-app.get("/:id",(req,res)=>{
-    res.send(req.params.id)
-})
+app.get("/:id",(req,res,get_initial_data)=>{
+     console.log(data)
+});
 
 app.post("/api/v1/urls",(req,res)=>{
     console.log("start posting")
