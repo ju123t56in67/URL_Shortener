@@ -3,6 +3,7 @@
     "body-parser": "^1.19.2",
     "express": "^4.17.3",
     "mysql": "^2.18.1",
-    "redis": "^4.0.4"
+    "redis": "^4.0.4",
+    "silly-datetime": "^0.1.2"
   }
 }
