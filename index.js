@@ -4,6 +4,9 @@ const mysql = require("mysql");
 const bodyParser = require('body-parser');
 app.use(bodyParser.text({type: '*/*'}))
 const redis = require("redis")
+const url = require("url")
+const sd = require('silly-datetime');
+
 
 
 const connection = mysql.createConnection({
@@ -17,16 +20,33 @@ connection.connect((err)=>{
     if(err) throw err;
     console.log("Database Connected Successfully")
 });
-var data = []
-function get_initial_data(){
-    connection.query('select * from urlDb',function(err,result){
-        data = result
-    })
-    return data
-}
 
-app.get("/:id",(req,res,get_initial_data)=>{
-     console.log(data)
+app.get("/:id",(req,res)=>{
+    var time = sd.format(new Date(),'YYYY-MM-DD HH:mm:ss');
+    time = new Date(time)
+    let id = url.parse(req.url).pathname;
+    id = id.substring(1)
+    let expired_time
+    let redir
+    connection.query('select expired_time,url from urlDb where id = ?',[id],(err,result)=>{
+        if(err){
+            console.log("Finding by id is error")
+        }else{
+            try{
+                redir = result[0].url
+                expired_time =  new Date(result[0].expired_time)
+                if(time.valueOf()>expired_time.valueOf()){
+                    res.writeHead(404, {"Content-Type": "text/plain"});
+                    res.write("The time has already expired");
+                    res.send()
+                }else{
+                    res.redirect("http://localhost:8885/"+redir+"")
+                }
+            }catch(err){
+                console.log(err)
+            }
+        }
+    })
 });
 
 app.post("/api/v1/urls",(req,res)=>{
