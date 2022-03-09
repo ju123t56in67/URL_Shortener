@@ -3,14 +3,18 @@ const app =express();
 const mysql = require("mysql");
 const bodyParser = require('body-parser');
 app.use(bodyParser.text({type: '*/*'}))
-const redis = require("redis")
 const url = require("url")
 const sd = require('silly-datetime');
-const client = redis.createClient();
+const redis = require("redis");
+const client = redis.createClient(6379,'127.0.0.1');
 
-client.on('connect',function(){
-    console.log('Connected to Redis');
-});
+
+client.connect((err)=>{
+    if(err){
+        console.log("Redis connect fail")
+    }
+})
+
 
 const connection = mysql.createConnection({
     host: 'localhost',
@@ -37,8 +41,20 @@ function post_action(){
     });
 }
 
+async function testing(){
+    const dic = await client.get((err,result)=>{
+        console.log(result)
+        return result
+    })
+    return dic
+}
+
 function findById_action(){
     app.get("/:id",(req,res,next)=>{
+        client.set('test','shortUrl',redis.print)
+        testing().then(result=>{
+            console.log(result)
+        })
         let id = url.parse(req.url).pathname;
         id = id.substring(1)
         let expired_time
@@ -72,16 +88,6 @@ function findById_action(){
     });
 }
 
-function findByRedis(){
-    app.get('/:id',(req,res)=>{
-        let id = url.parse(req.url).pathname;
-        id = id.substring(1)
-        connection.query('selec expired_time,url "redirUrl" from urlDb where id = ?',[id],(err,result)=>{
-            client.setEx("url",result[0].redirUrl);
-            console.log(client.get("url"))
-        })
-    })
-}
 
 function isObjEmpty(obj) {
     return Object.keys(obj).length === 0;
