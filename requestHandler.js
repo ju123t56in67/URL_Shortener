@@ -6,14 +6,15 @@ app.use(bodyParser.text({type: '*/*'}))
 const url = require("url")
 const sd = require('silly-datetime');
 const redis = require("redis");
-const client = redis.createClient(6379,'127.0.0.1');
+const { promisify } = require("util");
 
-
-client.connect((err)=>{
-    if(err){
-        console.log("Redis connect fail")
-    }
+const client = redis.createClient({
+    host:'127.0.0.1',
+    port:6379,
 })
+
+const GET_ASYNC = promisify(client.get).bind(client);
+const SET_ASYNC = promisify(client.set).bind(client);
 
 
 const connection = mysql.createConnection({
@@ -27,15 +28,17 @@ function post_action(){
     app.post("/api/v1/urls",(req,res)=>{
         console.log("start posting")
         var user = JSON.parse(req.body).url
-        console.log(user)
+        user=url.parse(user).pathname
+        user =user.substring(1)
         var expireAt = JSON.parse(req.body).expireAt
         connection.query('select count(*) "count" from urlDb',function(err,result){
             if(err) throw err
             const count = result[0].count
-            const shortUrl = user+"/"+count;
+            const shortUrl = count;
+            console.log("Post data url: "+user+" shortUrl: "+shortUrl+" expireAt: "+expireAt)
             connection.query("insert into urlDb(url,shortUrl,expired_time) values ('"+user+"','"+shortUrl+"','"+expireAt+"');",function(err,result){
             if(err) throw err
-            res.send("id:"+count+","+"\r\n"+"shortUrl:  "+"http://localhost/"+shortUrl)
+            res.send("id:"+count+","+"\r\n"+"shortUrl:  "+"http://localhost:8888/"+shortUrl)
             });
         });
     });
@@ -51,10 +54,6 @@ async function testing(){
 
 function findById_action(){
     app.get("/:id",(req,res,next)=>{
-        client.set('test','shortUrl',redis.print)
-        testing().then(result=>{
-            console.log(result)
-        })
         let id = url.parse(req.url).pathname;
         id = id.substring(1)
         let expired_time
@@ -64,8 +63,6 @@ function findById_action(){
                 console.log("findbyid occur error")
             }else{
                 if(isObjEmpty(result)){
-                    // client.setEx("url",result[0].redirUrl);
-                    // console.log("redis: "+client.get("url"))
                     res.writeHead(404, {"Content-Type": "text/plain"});
                     res.write("Can't find the id in db");
                     res.send()
@@ -79,6 +76,7 @@ function findById_action(){
                         res.send()
                         next()
                     }else{
+                        console.log("redirect to: "+redir)
                         res.redirect("http://localhost:8888/"+redir+"")
                         next()
                     }
@@ -88,7 +86,6 @@ function findById_action(){
     });
 }
 
-
 function isObjEmpty(obj) {
     return Object.keys(obj).length === 0;
 }
@@ -96,7 +93,7 @@ function isObjEmpty(obj) {
 function checkTime(expir){
     var presentTime = sd.format(new Date(),'YYYY-MM-DD HH:mm:ss');
     presentTime = new Date(presentTime)
-    if(presentTime>expir){
+    if((Date.parse(presentTime)).valueOf()>(Date.parse(expir)).valueOf()){
         return true
     }else{
         return false
