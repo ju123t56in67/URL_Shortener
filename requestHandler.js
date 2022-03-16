@@ -8,13 +8,8 @@ const sd = require('silly-datetime');
 const redis = require("redis");
 const { promisify } = require("util");
 
-const client = redis.createClient({
-    host:'127.0.0.1',
-    port:6379,
-})
+const client = redis.createClient()
 
-const GET_ASYNC = promisify(client.get).bind(client);
-const SET_ASYNC = promisify(client.set).bind(client);
 
 
 const connection = mysql.createConnection({
@@ -38,6 +33,11 @@ function post_action(){
             console.log("Post data url: "+user+" shortUrl: "+shortUrl+" expireAt: "+expireAt)
             connection.query("insert into urlDb(url,shortUrl,expired_time) values ('"+user+"','"+shortUrl+"','"+expireAt+"');",function(err,result){
             if(err) throw err
+            var redisData = {
+                "url":user,
+                "expired_time":expireAt
+            }
+            client.set(count,JSON.stringify(redisData),redis.print)
             res.send("id:"+count+","+"\r\n"+"shortUrl:  "+"http://localhost:8888/"+shortUrl)
             });
         });
@@ -56,6 +56,7 @@ function findById_action(){
     app.get("/:id",(req,res,next)=>{
         let id = url.parse(req.url).pathname;
         id = id.substring(1)
+        client.get(30,redis.print)
         let expired_time
         let redir =""
         connection.query('select expired_time,url "redirUrl" from urlDb where id = ?',[id],(err,result)=>{

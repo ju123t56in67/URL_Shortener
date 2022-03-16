@@ -8,3 +8,6 @@
 
 3/8 解決了 網頁url帶id會redirect到新頁面 這個步驟所出現的error跟exception 接下來要研究redis讓指定id的資料先存起來
 
+3/16 開始使用redis 之前會出錯是因為 npm install redis的版本是4.0.0 所以導致都不會有反應
+    解決方法 : npm uninstall redis -- save
+              npm install redis@3.1.1 -- save 
