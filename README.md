@@ -18,7 +18,7 @@ node index.js
 
 ## testing
 ---------------------------------------------------
-
+![image](https://github.com/ju123t56in67/URL_Shortener/blob/main/postman.png)
 
 
 
