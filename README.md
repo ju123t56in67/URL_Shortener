@@ -16,18 +16,24 @@ node index.js
 
 ```
 
-## testing
----------------------------------------------------
+
+## Post the URL
+
+
+```
+Example
+
+{
+    "url":"http://localhost:8888/test",
+    "expireAt":"2022-03-22 18:20:55"
+}
+
+```
+### Result
 ![image](https://github.com/ju123t56in67/URL_Shortener/blob/main/postman.png)
 
-
-
-
-
-
-
-
-
+## Redirect URL API
+這邊就放上時間到期,成功,還有沒有找到資料
 
 
 
