@@ -13,6 +13,7 @@ Redis : 3.1.1
 
 docker pull justinchiu2000/mysql_backup
 
+docker run --name mysql  -p 6603:3306 -d justinchiu2000/mysql_backup
 ```
 ## Run Server
 
@@ -24,7 +25,7 @@ node index.js
 ```
 
 
-## Post the URL
+## Post Method
 
 
 ```
