@@ -10,10 +10,11 @@ const { promisify } = require("util");
 
 const client = redis.createClient()
 
-
+var flag = false;
 
 const connection = mysql.createConnection({
     host: 'localhost',
+    port:'6603',
     user: 'root',
     password: 'root',
     database: 'localDb'
@@ -27,12 +28,11 @@ function post_action(){
         user=url.parse(user).pathname
         user =user.substring(1)
         var expireAt = JSON.parse(req.body).expireAt
-        connection.query('select count(*) "count" from urlDb',function(err,result){
+        connection.query('select count(*) "count" from url_info',function(err,result){
             if(err) throw err
             const count = result[0].count+1
-            const shortUrl = count;
-            console.log("Post data url: "+user+" shortUrl: "+shortUrl+" expireAt: "+expireAt)
-            connection.query("insert into urlDb(url,shortUrl,expired_time) values ('"+user+"','"+shortUrl+"','"+expireAt+"');",function(err,result){
+            console.log("Post data url: "+user+" expireAt: "+expireAt)
+            connection.query("insert into url_info(url,expired_time) values ('"+user+"','"+expireAt+"');",function(err,result){
             if(err) throw err
             var redisData = {
                 "url":user,
@@ -40,7 +40,7 @@ function post_action(){
             }
             client.set(count,JSON.stringify(redisData),redis.print)
             client.get(count,redis.print)
-            res.send("id:"+count+","+"\r\n"+"shortUrl:  "+"http://localhost:8888/"+shortUrl)
+            res.send("id:"+count+","+"\r\n"+"shortUrl:  "+"http://localhost:8888/"+count)
             });
         });
     });
@@ -68,7 +68,7 @@ function findById_action(){
                 next()
             }else{
                 var redisId = Number(id)
-                console.log(">>>>ID from the url"+redisId)
+                console.log(">>>>ID from the url: "+redisId)
                 client.get(id,(err,rawData)=>{
                     if(err) {
                         console.error("Redis cache failed "+err)
@@ -93,17 +93,23 @@ function findById_action(){
                         console.info("Searching the data in Db")
                         let expired_time
                         let redir =""
-                        connection.query('select expired_time,url "redirUrl" from urlDb where id = ?',[id],(err,result)=>{
+                        flag = false
+                        connection.query('select expired_time,url "redirUrl" from url_info where id = ?',[id],(err,result)=>{
                         if(err){
                             console.error("findbyid occur error"+err)
                         }else{
-                            redir = result[0].redirUrl
-                            expired_time =  new Date(result[0].expired_time)
                             if(isObjEmpty(result)){
-                                res.writeHead(404, {"Content-Type": "text/plain"});
-                                res.write("Can't find the id in db");
-                                res.send()
-                                next()
+                                if(flag){
+                                    res.writeHead(200, {"Content-Type": "text/plain"});
+                                    res.write("Redirect success!!!");
+                                    res.send()
+                                    next()
+                                }else{
+                                    res.writeHead(404, {"Content-Type": "text/plain"});
+                                    res.write("Can't find the id in db");
+                                    res.send()
+                                    next()
+                                }
                             }else{
                                 redir = result[0].redirUrl
                                 expired_time =  new Date(result[0].expired_time)
@@ -119,6 +125,7 @@ function findById_action(){
                                     next()
                                 }else{
                                     console.log("redirect to: "+redir)
+                                    flag =true
                                     res.redirect("http://localhost:8888/"+redir+"")
                                     next()
                                 }
