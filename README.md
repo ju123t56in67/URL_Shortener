@@ -4,7 +4,7 @@
 ```
 node : v16.14.0
 MySQL : 5.7
-Redis : 3.1.1
+Redis : 3.1.1        #port6379
 
 ```
 ## Setting the MySQL Workspace
@@ -19,6 +19,10 @@ docker run --name mysql  -p 6603:3306 -d justinchiu2000/mysql_backup
 
 ```
 git clone https://github.com/ju123t56in67/URL_Shortener.git
+
+cd URL_Shortener
+
+npm install
 
 node index.js
 
